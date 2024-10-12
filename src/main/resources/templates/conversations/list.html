@@ -1,0 +1,56 @@
+<div th:replace="fragments/header"></div>
+<script>
+    function addConversation() {
+        const title = document.getElementById('title').value;
+        const conversation = {
+            title: title,
+            llmModel: 'defaultModel'
+        };
+        fetch('/conversations/add.json', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(conversation)
+        })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Success:', data);
+                window.location.href = '/conversations/detail?conversationId=' + data.data.id;
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+    }
+</script>
+<div class="container mt-5" style="height: 500px; overflow-y: auto;">
+    <div class="row">
+        <div class="col-md-3" style="background-color: #f8f9fa; height: 500px; overflow-y: auto;">
+            <h4 class="text-center">历史会话</h4>
+            <div class="list-group" id="conversationList">
+                <a th:each="conversation : ${conversations}" th:href="@{'/conversations/detail'(conversationId=${conversation.id})}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                    <span th:text="${conversation.title}"></span>
+                    <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+        <div class="col-md-9">
+            <div class="input-container text-center">
+                <h1>有什么可以帮忙的？</h1>
+                <div class="input-group mt-4">
+                    <input type="text" id="title" name="title" class="form-control" placeholder="发送消息" required>
+                    <div class="input-group-append">
+                        <button class="btn btn-primary" type="button" onclick="addConversation()">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div th:replace="fragments/footer">
+</div>
+
+
