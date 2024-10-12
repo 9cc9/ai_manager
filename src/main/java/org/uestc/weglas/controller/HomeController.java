@@ -29,6 +29,8 @@ public class HomeController {
     public String conversationDetail(@RequestParam Integer conversationId, Model model) {
         Conversation conversation = conversationService.queryById(conversationId);
         model.addAttribute("conversation", conversation);
+        model.addAttribute("conversations", conversationService.queryAll());
+
         return "conversations/detail";
     }
 }
