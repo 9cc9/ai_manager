@@ -1,6 +1,7 @@
 package org.uestc.weglas.util;
 
 import org.apache.commons.lang.builder.ToStringBuilder;
+import org.uestc.weglas.core.enums.ResultEnum;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,8 +38,8 @@ public class BaseResult<T> {
         return new BaseResult<>(true, "Operation successful", values);
     }
 
-    public static <T> BaseResult<T> fail(String message) {
-        return new BaseResult<>(false, message, null);
+    public static <T> BaseResult<T> fail(ResultEnum resultCode) {
+        return new BaseResult<>(false, resultCode.getCode(), null);
     }
 
     public boolean isSuccess() {

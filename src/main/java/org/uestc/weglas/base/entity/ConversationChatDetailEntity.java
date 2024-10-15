@@ -28,7 +28,7 @@ public class ConversationChatDetailEntity extends ToString {
   private Integer conversationId;
 
   /**
-   * 会话角色：SYSTEM/USER/ASSISTANT...
+   * 会话角色：system/user/assistant...
    */
   private String role;
 

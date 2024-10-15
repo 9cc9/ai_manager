@@ -3,11 +3,14 @@ package org.uestc.weglas.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.uestc.weglas.core.builder.ConversationChatBuilder;
 import org.uestc.weglas.core.model.Conversation;
 import org.uestc.weglas.core.model.ConversationChatDetail;
+import org.uestc.weglas.core.service.ChatService;
 import org.uestc.weglas.core.service.ConversationService;
 import org.uestc.weglas.util.BaseResult;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -20,6 +23,9 @@ public class ConversationController {
 
     @Autowired
     private ConversationService conversationService;
+
+    @Autowired
+    private ChatService chatService;
 
 
     @GetMapping("/list.json")
@@ -42,14 +48,32 @@ public class ConversationController {
 
         conversationService.add(conversation);
 
+        // 创建一条默认的chat
+        ConversationChatDetail userChat = ConversationChatBuilder.buildDefaultChat(conversation);
+        doChat(userChat);
+
         return BaseResult.success(conversation);
     }
+
 
     @PostMapping("/addChat.json")
     public BaseResult<ConversationChatDetail> addChat(@RequestBody ConversationChatDetail chat) {
 
+        List<ConversationChatDetail> chats = doChat(chat);
+        return BaseResult.success(chats);
+    }
+
+
+    private List<ConversationChatDetail> doChat(ConversationChatDetail chat) {
+        List<ConversationChatDetail> chats = new ArrayList<>();
+        Conversation conversation = conversationService.queryById(chat.getConversationId());
+        ConversationChatDetail responseChat = chatService.chat(conversation, chat);
+
         conversationService.addChat(chat);
-        return BaseResult.success(chat);
+        conversationService.addChat(responseChat);
+        chats.add(chat);
+        chats.add(responseChat);
+        return chats;
     }
 
 }

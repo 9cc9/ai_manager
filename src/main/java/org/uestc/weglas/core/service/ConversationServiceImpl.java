@@ -36,11 +36,6 @@ public class ConversationServiceImpl implements ConversationService {
         conversationMapper.insert(entity);
         // 设置最新的id
         conversation.setId(entity.getId());
-
-        // 创建一条默认的chat
-        ConversationChatDetail chat = generateDefaultChat(conversation, entity);
-        doAddChat(chat);
-        conversation.getChatList().add(chat);
     }
 
     @Override
@@ -82,15 +77,6 @@ public class ConversationServiceImpl implements ConversationService {
         conversationChatDetailMapper.deleteById(chatId);
     }
 
-
-    private static ConversationChatDetail generateDefaultChat(Conversation conversation, ConversationEntity entity) {
-        ConversationChatDetail chat = new ConversationChatDetail();
-        chat.setConversationId(conversation.getId());
-        chat.setContent(conversation.getTitle());
-        chat.setRole("USER");
-        chat.setType("TEXT");
-        return chat;
-    }
 
     private void doAddChat(ConversationChatDetail chat) {
         ConversationChatDetailEntity entity = ConversationChatDetailConverter.convert(chat);
