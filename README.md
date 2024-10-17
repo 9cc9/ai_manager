@@ -9,7 +9,7 @@
     * java -jar target/ai-manager.jar
     * 启动过程中会自动执行schema.sql,新建数据表
 
-## 项目目录结构
+## 项目说明
 1. 目录结构
    - src/main/java
      - controller：web层控制器文件
