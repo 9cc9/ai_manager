@@ -3,6 +3,9 @@ package org.uestc.weglas.core.service;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.TypeReference;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -16,6 +19,7 @@ import org.uestc.weglas.core.model.Conversation;
 import org.uestc.weglas.core.model.ConversationChatDetail;
 import org.uestc.weglas.util.exception.AssertUtil;
 import org.uestc.weglas.util.exception.ManagerBizException;
+import org.uestc.weglas.util.log.LogUtil;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -33,9 +37,13 @@ import java.util.Map;
 @Slf4j
 public class ChatServiceImpl implements ChatService {
 
+    protected static final Logger logger = LogManager.getLogger(ChatServiceImpl.class);
     public static final String AI_INVOKE_URL = "http://localhost:8080/chat";
 
-    private final WebClient webClient = WebClient.builder().baseUrl("http://localhost:8080").build(); ;
+    private final WebClient webClient = WebClient.builder().baseUrl("http://localhost:8080").build();
+
+    @Autowired
+    private ConversationService conversationService;
 
 
     /**
@@ -50,28 +58,37 @@ public class ChatServiceImpl implements ChatService {
         headers.setContentType(MediaType.APPLICATION_JSON);
 
         ResponseEntity<String> response = new RestTemplate().postForEntity(AI_INVOKE_URL,
-                buildHttpRequest(conversation, currentChat, headers), String.class);
+                buildRequest(conversation, currentChat, headers), String.class);
 
         return ConversationChatBuilder.buildAssistantChat(conversation, parseResponse(response));
     }
 
     @Override
     public Flux<String> streamChat(Conversation conversation, ConversationChatDetail chat) {
-        Map<String, Object> payload = buildPayload(conversation, chat);
 
-        // 发送 POST 请求并处理流式响应
+        Map<String, Object> payload = buildPayload(conversation, chat);
+        StringBuilder completeResponse = new StringBuilder();
+
         return this.webClient.post()
-                .uri("/chat")
+                .uri("/streamChat")
                 .body(Mono.just(payload), Map.class)
                 .retrieve()
-                .bodyToFlux(String.class)  // 使用 Flux 处理流式响应
+                .bodyToFlux(String.class)
                 .doOnNext(responseChunk -> {
-                    System.out.println("Received chunk: " + responseChunk);
-                    // 可以在这里处理每一块流式响应，例如显示在 UI 上
+                    completeResponse.append(responseChunk);
+                    LogUtil.info(logger, "Received chunk: " + responseChunk);
+                })
+                .doOnComplete(() -> {
+                    // 流式响应完成时，保存完整的响应到数据库
+                    String finalResponse = completeResponse.toString();
+
+                    LogUtil.info(logger, "Complete response: " + finalResponse);
+                    ConversationChatDetail assistantChat = ConversationChatBuilder.buildAssistantChat(conversation, finalResponse);
+                    conversationService.addChat(assistantChat);
                 });
     }
 
-    private HttpEntity<Map<String, Object>> buildHttpRequest(Conversation conversation, ConversationChatDetail currentChat, HttpHeaders headers) {
+    private HttpEntity<Map<String, Object>> buildRequest(Conversation conversation, ConversationChatDetail currentChat, HttpHeaders headers) {
         Map<String, Object> requestPayload = buildPayload(conversation, currentChat);
 
         return new HttpEntity<>(requestPayload, headers);
@@ -89,6 +106,7 @@ public class ChatServiceImpl implements ChatService {
             String json = entity.getBody();
             Map<String, String> map = JSON.parseObject(json, new TypeReference<Map<String, String>>() {
             });
+            AssertUtil.notNull(map);
             String response = URLDecoder.decode(map.getOrDefault("response", ""), StandardCharsets.UTF_8.name());
             AssertUtil.notBlank(response);
             return response;

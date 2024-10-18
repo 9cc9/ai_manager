@@ -86,7 +86,7 @@
         </div>
         <div class="card" style="max-width: 60%;">
             <div class="card-body">
-                <p class="card-text assistant-message"></p>
+                <p class="card-text assistant-message">...</p>
             </div>
         </div>
     `;
@@ -114,7 +114,6 @@
                 // 找到刚才添加的最后一个助手消息块
                 const assistantMessageContent = assistantMessageWrapper.querySelector('.assistant-message');
 
-                // 开始读取流式数据
                 readStream(assistantMessageContent, decoder, reader);
             }).catch(error => {
             console.error('Error:', error);
@@ -140,7 +139,13 @@
             console.log("Received chunk:", chunk);
 
             // 将接收到的内容附加到现有的 div 中
-            assistantMessageContent.innerHTML += chunk;
+            if (assistantMessageContent.textContent === '...') {
+                // 如果还没有接收到第一块数据，替换 "..." 为第一块数据
+                assistantMessageContent.textContent = chunk;
+            } else {
+                // 如果已经接收了部分数据，继续追加
+                assistantMessageContent.textContent += chunk;
+            }
 
             // 确保聊天容器滚动到底部
             const chatContainer = document.getElementById('chatContainer');

@@ -63,7 +63,6 @@ public class ConversationController {
         return BaseResult.success(chats);
     }
 
-
     @PostMapping("/streamChat.json")
     public Flux<String> streamChat(@RequestBody ConversationChatDetail chat) {
         Conversation conversation = conversationService.queryById(chat.getConversationId());
