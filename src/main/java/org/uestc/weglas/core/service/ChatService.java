@@ -2,6 +2,7 @@ package org.uestc.weglas.core.service;
 
 import org.uestc.weglas.core.model.Conversation;
 import org.uestc.weglas.core.model.ConversationChatDetail;
+import reactor.core.publisher.Flux;
 
 /**
  * @author yingxian.cyx
@@ -16,4 +17,13 @@ public interface ChatService {
      * @return 操作结果
      */
     ConversationChatDetail chat(Conversation conversation, ConversationChatDetail currentChat);
+
+    /**
+     * 支持流式输出
+     *
+     * @param conversation
+     * @param chat
+     * @return
+     */
+    Flux<String> streamChat(Conversation conversation, ConversationChatDetail chat);
 }

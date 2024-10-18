@@ -31,6 +31,6 @@ public class HomeController {
         model.addAttribute("conversation", conversation);
         model.addAttribute("conversations", conversationService.queryAll());
 
-        return "conversations/detail";
+        return "conversations/detail_with_stream_chat";
     }
 }

@@ -9,6 +9,7 @@ import org.uestc.weglas.core.model.ConversationChatDetail;
 import org.uestc.weglas.core.service.ChatService;
 import org.uestc.weglas.core.service.ConversationService;
 import org.uestc.weglas.util.BaseResult;
+import reactor.core.publisher.Flux;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,7 +27,6 @@ public class ConversationController {
 
     @Autowired
     private ChatService chatService;
-
 
     @GetMapping("/list.json")
     public BaseResult<Conversation> queryAll(Model model) {
@@ -61,6 +61,18 @@ public class ConversationController {
 
         List<ConversationChatDetail> chats = doChat(chat);
         return BaseResult.success(chats);
+    }
+
+
+    @PostMapping("/streamChat.json")
+    public Flux<String> streamChat(@RequestBody ConversationChatDetail chat) {
+        Conversation conversation = conversationService.queryById(chat.getConversationId());
+
+        // 写入当前聊天内容到db
+        conversationService.addChat(chat);
+
+        // 调用服务，获取流式响应
+        return chatService.streamChat(conversation, chat);
     }
 
 
