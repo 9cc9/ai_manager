@@ -2,7 +2,7 @@
 
 <div class="container mt-5" style="height: 600px; display: flex; flex-direction: column;">
     <!-- 会话内容显示区 -->
-    <div class="row flex-grow-1" style="overflow-y: auto;">
+    <div id="scrollContainer" class="row flex-grow-1" style="overflow-y: auto;">
         <div class="col-md-3" style="background-color: #f8f9fa; overflow-y: auto;">
             <h4 class="text-center">历史会话</h4>
             <div class="list-group" id="conversationList">
@@ -114,6 +114,9 @@
                 // 找到刚才添加的最后一个助手消息块
                 const assistantMessageContent = assistantMessageWrapper.querySelector('.assistant-message');
 
+                const scrollContainer = document.getElementById('scrollContainer');
+                scrollContainer.scrollTop = scrollContainer.scrollHeight;
+
                 readStream(assistantMessageContent, decoder, reader);
             }).catch(error => {
             console.error('Error:', error);
@@ -131,6 +134,9 @@
                 sendButton.classList.remove('btn-secondary');
                 sendButton.classList.add('btn-primary');
                 console.log("Stream finished.");
+
+                const scrollContainer = document.getElementById('scrollContainer');
+                scrollContainer.scrollTop = scrollContainer.scrollHeight;
                 return;
             }
 
@@ -146,10 +152,6 @@
                 // 如果已经接收了部分数据，继续追加
                 assistantMessageContent.textContent += chunk;
             }
-
-            // 确保聊天容器滚动到底部
-            const chatContainer = document.getElementById('chatContainer');
-            chatContainer.scrollTop = chatContainer.scrollHeight;
 
             // 继续读取下一个块
             readStream(assistantMessageContent, decoder, reader);
