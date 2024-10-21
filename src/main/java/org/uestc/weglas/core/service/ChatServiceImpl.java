@@ -6,6 +6,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -35,16 +37,20 @@ import java.util.Map;
  */
 @Service
 @Slf4j
+@Configuration
 public class ChatServiceImpl implements ChatService {
 
-    protected static final Logger logger = LogManager.getLogger(ChatServiceImpl.class);
-    public static final String AI_INVOKE_URL = "http://localhost:8080/chat";
+    private final Logger logger = LogManager.getLogger(ChatServiceImpl.class);
+    private final WebClient webClient = WebClient.builder().build();
 
-    private final WebClient webClient = WebClient.builder().baseUrl("http://localhost:8080").build();
+    @Value("${spring.ai.chat-url}")
+    private String aiChatURL;
+
+    @Value("${spring.ai.stream-chat-url}")
+    private String aiStreamChatURL;
 
     @Autowired
     private ConversationService conversationService;
-
 
     /**
      * @param conversation 历史会话
@@ -54,44 +60,59 @@ public class ChatServiceImpl implements ChatService {
     @Override
     public ConversationChatDetail chat(Conversation conversation, ConversationChatDetail currentChat) {
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-
-        ResponseEntity<String> response = new RestTemplate().postForEntity(AI_INVOKE_URL,
-                buildRequest(conversation, currentChat, headers), String.class);
+        ResponseEntity<String> response = new RestTemplate().postForEntity(aiChatURL,
+                buildRequest(conversation, currentChat), String.class);
 
         return ConversationChatBuilder.buildAssistantChat(conversation, parseResponse(response));
     }
 
+    /**
+     * 流式读取
+     *
+     * @param conversation 会话
+     * @param userChat     用户输入chat
+     * @return 流式返回文本
+     */
     @Override
-    public Flux<String> streamChat(Conversation conversation, ConversationChatDetail chat) {
+    public Flux<String> streamChat(Conversation conversation, ConversationChatDetail userChat) {
 
-        Map<String, Object> payload = buildPayload(conversation, chat);
+        Map<String, Object> payload = buildPayload(conversation, userChat);
         StringBuilder completeResponse = new StringBuilder();
 
         return this.webClient.post()
-                .uri("/streamChat")
+                .uri(aiStreamChatURL)
                 .body(Mono.just(payload), Map.class)
                 .retrieve()
                 .bodyToFlux(String.class)
                 .doOnNext(responseChunk -> {
-                    completeResponse.append(responseChunk);
-                    LogUtil.info(logger, "Received chunk: " + responseChunk);
+                    onNext(responseChunk, completeResponse);
                 })
                 .doOnComplete(() -> {
-                    // 流式响应完成时，保存完整的响应到数据库
-                    String finalResponse = completeResponse.toString();
-
-                    LogUtil.info(logger, "Complete response: " + finalResponse);
-                    ConversationChatDetail assistantChat = ConversationChatBuilder.buildAssistantChat(conversation, finalResponse);
-                    conversationService.addChat(assistantChat);
+                    onComplete(conversation, completeResponse);
                 });
     }
 
-    private HttpEntity<Map<String, Object>> buildRequest(Conversation conversation, ConversationChatDetail currentChat, HttpHeaders headers) {
-        Map<String, Object> requestPayload = buildPayload(conversation, currentChat);
+    private void onComplete(Conversation conversation, StringBuilder completeResponse) {
+        // 流式响应完成时，保存完整的响应到数据库
+        String finalResponse = completeResponse.toString();
 
-        return new HttpEntity<>(requestPayload, headers);
+        LogUtil.info(logger, "Complete response: " + finalResponse);
+        ConversationChatDetail assistantChat = ConversationChatBuilder.buildAssistantChat(conversation, finalResponse);
+
+        // 写入助手生成的chat
+        conversationService.addChat(assistantChat);
+    }
+
+    private void onNext(String responseChunk, StringBuilder completeResponse) {
+        completeResponse.append(responseChunk);
+        LogUtil.info(logger, "Received chunk: " + responseChunk);
+    }
+
+    private HttpEntity<Map<String, Object>> buildRequest(Conversation conversation, ConversationChatDetail currentChat) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        return new HttpEntity<>(buildPayload(conversation, currentChat), headers);
     }
 
     private Map<String, Object> buildPayload(Conversation conversation, ConversationChatDetail currentChat) {

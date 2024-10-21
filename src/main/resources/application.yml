@@ -34,6 +34,9 @@ spring:
       provider:
         id: provider-id
         topic: spring_send_topic
+  ai:
+    chat-url: http://localhost:8080/chat
+    stream-chat-url: http://localhost:8080/streamChat
   redis:
     host: localhost
     # 连接超时时间（记得添加单位，Duration）
