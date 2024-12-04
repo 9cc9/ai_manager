@@ -78,6 +78,7 @@ public class ConversationController {
     private List<ConversationChatDetail> doChat(ConversationChatDetail chat) {
         List<ConversationChatDetail> chats = new ArrayList<>();
         Conversation conversation = conversationService.queryById(chat.getConversationId());
+        // TODO 增加完结状态检测
         ConversationChatDetail responseChat = chatService.chat(conversation, chat);
 
         conversationService.addChat(chat);
