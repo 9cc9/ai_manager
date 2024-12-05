@@ -9,6 +9,9 @@ import org.uestc.weglas.core.model.ConversationChatDetail;
 import org.uestc.weglas.core.service.ChatService;
 import org.uestc.weglas.core.service.ConversationService;
 import org.uestc.weglas.util.BaseResult;
+import org.uestc.weglas.util.template.AbstractBizCallback;
+import org.uestc.weglas.util.template.BizTemplate;
+import org.uestc.weglas.util.validator.RequestValidator;
 import reactor.core.publisher.Flux;
 
 import java.util.ArrayList;
@@ -30,37 +33,67 @@ public class ConversationController {
 
     @GetMapping("/list.json")
     public BaseResult<Conversation> queryAll(Model model) {
-
-        // 调用服务层查询条件
-        List<Conversation> conversations = conversationService.queryAll();
-        return BaseResult.success(conversations);
+        return BizTemplate.execute(new AbstractBizCallback<Conversation>() {
+            @Override
+            public  void execute(BaseResult<Conversation> result) {
+                List<Conversation> conversations = conversationService.queryAll();
+                result.setValues(conversations);
+            }
+        });
     }
 
     // 会话详情
     @GetMapping("/detail.json")
     public BaseResult<Conversation> queryConversation(Model model, Integer conversationId) {
-        Conversation conversation = conversationService.queryById(conversationId);
-        return BaseResult.success(conversation);
+        return BizTemplate.execute(new AbstractBizCallback<Conversation>() {
+            @Override
+            public  void execute(BaseResult<Conversation> result) {
+                Conversation conversation = conversationService.queryById(conversationId);
+                result.setData(conversation);
+            }
+        });
+
     }
 
     @PostMapping("/add.json")
     public BaseResult<Conversation> addConversation(@RequestBody Conversation conversation) {
 
-        conversationService.add(conversation);
+        return BizTemplate.execute(new AbstractBizCallback<Conversation>() {
+            @Override
+            public void checkParameter() {
+                RequestValidator.valid(conversation);
+            }
 
-        // 创建一条默认的chat
-        ConversationChatDetail userChat = ConversationChatBuilder.buildDefaultChat(conversation);
-        doChat(userChat);
+            @Override
+            public  void execute(BaseResult<Conversation> result) {
+                conversationService.add(conversation);
 
-        return BaseResult.success(conversation);
+                // 创建一条默认的chat
+                ConversationChatDetail userChat = ConversationChatBuilder.buildDefaultChat(conversation);
+                doChat(userChat);
+
+                result.setData(conversation);
+            }
+        });
     }
 
 
     @PostMapping("/addChat.json")
     public BaseResult<ConversationChatDetail> addChat(@RequestBody ConversationChatDetail chat) {
+        return BizTemplate.execute(new AbstractBizCallback<ConversationChatDetail>() {
+            @Override
+            public void checkParameter() {
+                RequestValidator.valid(chat);
+            }
 
-        List<ConversationChatDetail> chats = doChat(chat);
-        return BaseResult.success(chats);
+            @Override
+            public  void execute(BaseResult<ConversationChatDetail> result) {
+
+                List<ConversationChatDetail> chats = doChat(chat);
+                result.setValues(chats);
+            }
+        });
+
     }
 
     @PostMapping("/streamChat.json")

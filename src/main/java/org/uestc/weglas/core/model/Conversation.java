@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.uestc.weglas.base.ToString;
 
+import javax.validation.constraints.NotBlank;
 import java.util.*;
 
 /**
@@ -21,6 +22,7 @@ public class Conversation extends ToString {
 
     private Integer id;
 
+    @NotBlank
     private String title;
 
     private String llmModel;

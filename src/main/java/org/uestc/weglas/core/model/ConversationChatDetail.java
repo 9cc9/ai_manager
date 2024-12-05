@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.uestc.weglas.base.ToString;
 
+import javax.validation.constraints.NotBlank;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -34,6 +35,7 @@ public class ConversationChatDetail extends ToString {
      * 类型：TEXT/IMAGE/VIDEO
      */
     private String type;
+    @NotBlank
     private String content;
 
     private Map<String,String> ext = new HashMap<>();

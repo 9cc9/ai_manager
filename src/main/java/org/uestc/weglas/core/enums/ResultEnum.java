@@ -9,6 +9,7 @@ public enum ResultEnum {
     SUCCESS("SUCCESS", "接口调用成功"),
     PARAMETER_ILLEGAL("PARAMETER_ILLEGAL", "参数校验失败"),
     INVOKE_FAIL("INVOKE_FAIL", "接口调用失败"),
+    SYSTEM_EXCEPTION("SYSTEM_EXCEPTION", "系统异常"),
     ;
 
     private String code;
